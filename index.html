@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            background-color: pink;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align:center;">Create A Post</h1>
+    <form style="text-align:center;" id="socialmediapost">
+        <label for="post">post-link</label>
+        <input type="text" id="post"><br><br>
+        <label for="description">post-description</label>
+        <input type="text" id="description"><br><br>
+        <button style="background-color:green;" type="submit">Create a Post</button>
+        <div id="imageDisplay" style="margin-top: 20px;">
+            <!-- Image will be displayed here -->
+        </div>
+    </form>
+</body>
+<script>
+    const form = document.getElementById("socialmediapost");
+    const imageDisplay = document.getElementById('imageDisplay');
+
+    // Function to fetch and display posts
+    async function fetchPosts() {
+        try {
+            const response = await axios.get('http://localhost:3000/api/posts');
+            const posts = response.data;
+
+            // Debugging line to ensure data is fetched correctly
+            console.log('Fetched posts:', posts);
+
+            // Clear the display area
+            imageDisplay.innerHTML = '';
+
+            // Loop through posts and render them
+            posts.forEach(post => {
+                const postElement = document.createElement('div');
+                postElement.style.margin = "20px";
+                postElement.style.border = "1px solid #ccc";
+                postElement.style.padding = "10px";
+                postElement.style.backgroundColor = "#fff";
+
+                postElement.innerHTML = `
+                    <img src="${post.imageUrl}" alt="Post Image" style="max-width: 100%; height: auto; border: 1px solid #ccc; padding: 5px;">
+                    <p>${post.description}</p>
+                `;
+
+                // Create comment section
+                const commentSection = document.createElement('div');
+                commentSection.style.marginTop = "10px";
+
+                const commentTitle = document.createElement('h4');
+                commentTitle.textContent = 'Comments';
+                commentSection.appendChild(commentTitle);
+
+                const commentList = document.createElement('ul');
+                commentList.id = `comments-${post.id}`;
+                commentList.style.listStyleType = "none";
+                commentList.style.padding = "0";
+                commentSection.appendChild(commentList);
+
+                const commentInput = document.createElement('input');
+                commentInput.type = "text";
+                commentInput.id = `comment-input-${post.id}`;
+                commentInput.placeholder = "Add a comment...";
+                commentInput.style.width = "70%";
+                commentInput.style.padding = "5px";
+                commentSection.appendChild(commentInput);
+
+                const postButton = document.createElement('button');
+                postButton.textContent = "Post";
+                postButton.style.padding = "5px 10px";
+                postButton.style.marginTop = "5px";
+                postButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    addComment(post.id); // Call addComment function when posting
+                });
+                commentSection.appendChild(postButton);
+
+                postElement.appendChild(commentSection);
+                imageDisplay.appendChild(postElement);
+
+                fetchComments(post.id); // Fetch comments after displaying posts
+            });
+        } catch (error) {
+            console.error("Error fetching posts:", error);
+            alert("Failed to load posts. Please try again.");
+        }
+    }
+
+    // Function to fetch comments for a post
+    async function fetchComments(postId) {
+        try {
+            const response = await axios.get(`http://localhost:3000/api/posts/${postId}/comments`);
+            const comments = response.data;
+
+            const commentsList = document.getElementById(`comments-${postId}`);
+            commentsList.innerHTML = ''; // Clear existing comments
+
+            comments.forEach(comment => {
+                const commentItem = document.createElement('li');
+                commentItem.textContent = comment.text;
+                commentsList.appendChild(commentItem);
+            });
+        } catch (error) {
+            console.error("Error fetching comments:", error);
+        }
+    }
+
+    // Function to add a comment to a post
+    async function addComment(postId) {
+        const commentInput = document.getElementById(`comment-input-${postId}`);
+        const commentText = commentInput.value.trim();
+
+        if (!commentText) {
+            alert('Comment cannot be empty.');
+            return;
+        }
+
+        try {
+            // Send the comment to the backend
+            const response = await axios.post(`http://localhost:3000/api/posts/${postId}/comments`, {
+                text: commentText
+            });
+
+            if (response.status === 201) {
+                const commentsList = document.getElementById(`comments-${postId}`);
+                const newCommentItem = document.createElement('li');
+                newCommentItem.textContent = commentText;
+                commentsList.appendChild(newCommentItem);
+
+                // Clear the input field
+                commentInput.value = '';
+            }
+        } catch (error) {
+            console.error('Error adding comment:', error);
+            alert('Failed to add comment. Please try again.');
+        }
+    }
+
+    // Handle form submission to create a new post
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const imageUrl = document.getElementById("post").value;
+        const description = document.getElementById("description").value;
+
+        try {
+            await axios.post('http://localhost:3000/api/posts', {
+                imageUrl,
+                description
+            });
+
+            // Reset form and fetch posts again
+            form.reset();
+            alert("Post successfully created!");
+            fetchPosts();
+        } catch (error) {
+            console.error("Error creating post:", error);
+            alert("Failed to create post. Please try again.");
+        }
+    });
+
+    // Fetch and display posts when the page loads
+    window.onload = fetchPosts;
+</script>
+</html>
