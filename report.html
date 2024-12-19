@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Report</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+  </style>
+</head>
+<body>
+  <h1>Attendance Report</h1>
+  <table id="attendance-table">
+    <thead>
+      <tr>
+        <th>Student Name</th>
+        <th>Date</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Records will be appended here -->
+    </tbody>
+  </table>
+  <script>
+    async function fetchAttendanceReport() {
+      try {
+        const response = await fetch('http://localhost:5000/get-all-attendance');
+        if (!response.ok) throw new Error('Failed to fetch attendance report.');
+
+        const data = await response.json();
+        const tableBody = document.querySelector('#attendance-table tbody');
+        tableBody.innerHTML = '';
+
+        data.attendance.forEach((record) => {
+          const row = `
+            <tr>
+              <td>${record.studentName}</td>
+              <td>${record.date}</td>
+              <td>${record.status}</td>
+            </tr>
+          `;
+          tableBody.innerHTML += row;
+        });
+      } catch (error) {
+        console.error('Error fetching report:', error);
+        alert('Failed to fetch attendance report. Please try again.');
+      }
+    }
+
+    fetchAttendanceReport();
+  </script>
+</body>
+</html>
